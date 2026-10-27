@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Reservación de Laboratorios - ITTLA</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- QRCode.js Library CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ittla: {
+              green: '#006837',
+              darkgreen: '#004d28',
+              lightgreen: '#e6f4ea',
+              accent: '#8cc63f',
+              red: '#d32f2f',
+              gray: '#f4f6f8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Archivo CSS Personalizado -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col text-gray-800">
+
+  <!-- ENCABEZADO SUPERIOR -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo ITTLA -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('search')">
+        <img src="https://imgs.search.brave.com/Ij7iMgu09c6wtFojrG0r1-Se1WCSDGeY49FtS9ulWLU/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2E1L0lUVExBLmpw/Zz91dG1fc291cmNl/PWVzLndpa2lwZWRp/YS5vcmcmdXRtX2Nh/bXBhaWduPWluZGV4/JnV0bV9jb250ZW50/PXRodW1ibmFpbF91/bnNjYWxlZA" 
+             alt="Logo ITTLA" class="h-10 w-auto object-contain" onError="this.src='https://via.placeholder.com/40x40?text=ITTLA'">
+        <div>
+          <span class="font-bold text-lg text-ittla-green block leading-none">ITTLA</span>
+          <span class="text-xs text-gray-500 font-medium hidden sm:inline">Reserva de Laboratorios</span>
+        </div>
+      </div>
+
+      <!-- Pestañas de Navegación -->
+      <nav class="flex space-x-1 sm:space-x-4 text-xs sm:text-sm font-medium">
+        <button id="nav-search" onclick="navigateTo('search')" class="px-3 py-2 rounded-md transition-colors text-ittla-green bg-ittla-lightgreen font-semibold">
+          Buscar Laboratorio
+        </button>
+        <button id="nav-reservations" onclick="navigateTo('reservations')" class="px-3 py-2 rounded-md text-gray-600 hover:text-ittla-green hover:bg-gray-50 transition-colors">
+          Mis Reservaciones
+        </button>
+      </nav>
+
+      <!-- Perfil del Usuario -->
+      <div class="flex items-center space-x-2 border-l border-gray-200 pl-4">
+        <div class="w-8 h-8 rounded-full bg-ittla-green text-white flex items-center justify-center font-bold text-xs">
+          CR
+        </div>
+        <div class="hidden md:block text-left">
+          <p class="text-xs font-semibold leading-tight text-gray-800">Cruz Ruiz Eumir Antonio</p>
+          <p class="text-[10px] text-gray-500">23251061</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ÁREA PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- Notificación Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-in-out bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 text-sm">
+      <span id="toast-icon">✓</span>
+      <span id="toast-msg">Notificación</span>
+    </div>
+
+    <!-- PANTALLA 1: BÚSQUEDA Y CATÁLOGO DE LABORATORIOS (Search_Labs) -->
+    <section id="view-search" class="space-y-6">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 border-gray-200 gap-2">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Búsqueda y Catálogo de Laboratorios</h1>
+          <p class="text-sm text-gray-500">Encuentra disponibilidad y reserva el equipo adecuado para tus actividades académicas.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Panel Izquierdo: Filtros de Búsqueda -->
+        <div class="lg:col-span-1 bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-5 h-fit">
+          <h2 class="font-bold text-gray-700 text-lg border-b pb-2 flex items-center justify-between">
+            <span>Filtros de Búsqueda</span>
+            <button onclick="resetFilters()" class="text-xs text-ittla-green hover:underline font-normal">Limpiar</button>
+          </h2>
+
+          <!-- Edificio / Laboratorio -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Edificio / Laboratorio</label>
+            <select id="filter-building" class="w-full text-sm border-gray-300 rounded-lg border p-2 focus:ring-2 focus:ring-ittla-green focus:border-transparent outline-none">
+              <option value="ALL">Todos los Laboratorios</option>
+              <option value="L-1">Laboratorio L-1 (Edificio B)</option>
+              <option value="L-2">Laboratorio L-2 (Edificio C)</option>
+              <option value="L-3" selected>Laboratorio L-3 (Edificio C)</option>
+              <option value="L-4">Laboratorio L-4 (Edificio C)</option>
+            </select>
+          </div>
+
+          <!-- Fecha -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Fecha</label>
+            <input type="date" id="filter-date" value="2026-10-28" class="w-full text-sm border-gray-300 rounded-lg border p-2 focus:ring-2 focus:ring-ittla-green outline-none">
+          </div>
+
+          <!-- Rango Horario -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Rango Horario</label>
+            <select id="filter-time" class="w-full text-sm border-gray-300 rounded-lg border p-2 focus:ring-2 focus:ring-ittla-green outline-none">
+              <option value="07:00 - 08:00">07:00 - 08:00</option>
+              <option value="08:00 - 09:00">08:00 - 09:00</option>
+              <option value="08:00 - 10:00" selected>08:00 - 10:00</option>
+              <option value="10:00 - 11:00">10:00 - 11:00</option>
+              <option value="11:00 - 12:00">11:00 - 12:00</option>
+              <option value="12:00 - 13:00">12:00 - 13:00</option>
+              <option value="13:00 - 14:00">13:00 - 14:00</option>
+              <option value="14:00 - 15:00">14:00 - 15:00</option>
+            </select>
+          </div>
+
+          <!-- Filtro Técnico (Sistemas Operativos) -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2">Sistema Operativo Requerido</label>
+            <div class="space-y-2 text-sm">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="os-linux" checked class="rounded text-ittla-green focus:ring-ittla-green h-4 w-4">
+                <span>Linux (Ubuntu)</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="os-win10" class="rounded text-ittla-green focus:ring-ittla-green h-4 w-4">
+                <span>Windows 10</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="os-win11" class="rounded text-ittla-green focus:ring-ittla-green h-4 w-4">
+                <span>Windows 11</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Filtro Técnico (Software) -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2">Software Requerido</label>
+            <div class="space-y-2 text-sm">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="sw-java" checked class="rounded text-ittla-green focus:ring-ittla-green h-4 w-4">
+                <span>Java / Android Studio</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="sw-db" class="rounded text-ittla-green focus:ring-ittla-green h-4 w-4">
+                <span>MySQL / Oracle</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="sw-ide" class="rounded text-ittla-green focus:ring-ittla-green h-4 w-4">
+                <span>VS Code / NetBeans</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="sw-net" class="rounded text-ittla-green focus:ring-ittla-green h-4 w-4">
+                <span>Cisco Packet Tracer / DOSBox</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="sw-game" class="rounded text-ittla-green focus:ring-ittla-green h-4 w-4">
+                <span>Godot Engine / Python</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Botón de Búsqueda -->
+          <button onclick="applySearchFilters()" class="w-full bg-ittla-green hover:bg-ittla-darkgreen text-white font-medium py-2.5 px-4 rounded-lg shadow transition-colors flex items-center justify-center space-x-2 text-sm">
+            <span>Buscar Disponibilidad</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </button>
+        </div>
+
+        <!-- Área Principal: Resultados en Grid -->
+        <div class="lg:col-span-3">
+          <div class="mb-3 flex justify-between items-center text-sm text-gray-500">
+            <span>Mostrando laboratorios que coinciden con los criterios</span>
+            <span id="lab-count-badge" class="font-semibold text-gray-700">4 Laboratorios</span>
+          </div>
+
+          <div id="labs-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Renderizado dinámico de tarjetas de Laboratorio mediante JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANTALLA 2: SELECCIÓN DE HORARIO Y EQUIPO (Booking_Calendar) -->
+    <section id="view-calendar" class="space-y-6 hidden">
+      <div class="flex items-center justify-between border-b pb-4 border-gray-200">
+        <div>
+          <button onclick="navigateTo('search')" class="text-xs font-semibold text-ittla-green hover:underline flex items-center space-x-1 mb-1">
+            <span>← Volver al Catálogo</span>
+          </button>
+          <h1 id="selected-lab-title" class="text-2xl font-bold text-gray-800">Laboratorio L-3 - Selección de Equipo y Hora</h1>
+          <p class="text-xs text-gray-500" id="selected-lab-subtitle">Edificio C | 30 Equipos Core i7, 16GB RAM, SO Dual (Ubuntu/Win11)</p>
+        </div>
+        <span class="bg-ittla-lightgreen text-ittla-green px-3 py-1 rounded-full text-xs font-bold border border-ittla-green/20">
+          Paso 2 de 3
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Mapa de Equipos del Aula -->
+        <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+          <div class="flex justify-between items-center border-b pb-3">
+            <h2 class="font-bold text-gray-800 flex items-center space-x-2">
+              <svg class="w-5 h-5 text-ittla-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+              <span>Plano del Aula (<span id="pc-count-label">30</span> Equipos)</span>
+            </h2>
+            <div class="text-xs text-gray-500">Selecciona un equipo libre (Verde)</div>
+          </div>
+
+          <!-- Grid interactivo de PCs -->
+          <div id="pc-grid-container" class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-3 pt-2">
+            <!-- Renderizado dinámico de computadoras mediante JS -->
+          </div>
+
+          <!-- Mensaje de regla IHC cuando hay filtros aplicados -->
+          <div id="filter-warning-box" class="hidden text-xs bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg flex items-center space-x-2">
+            <span class="font-bold">Nota de Requisitos:</span>
+            <span>Los equipos desactivados en gris con etiqueta [ Incompatible ] no cuentan con el SO o software seleccionado en tus filtros técnicos.</span>
+          </div>
+        </div>
+
+        <!-- Panel Lateral -->
+        <div class="space-y-5">
+          <!-- Leyenda de Equipos -->
+          <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+            <h3 class="font-semibold text-gray-700 text-xs uppercase tracking-wider border-b pb-2">Leyenda de Equipos</h3>
+            <div class="grid grid-cols-1 gap-2 text-xs">
+              <div class="flex items-center space-x-3">
+                <div class="w-6 h-6 rounded bg-emerald-100 border border-emerald-500 text-emerald-700 flex items-center justify-center font-bold text-[10px]">✓</div>
+                <span class="text-gray-700 font-medium">Disponible (Cumple Requisitos)</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="w-6 h-6 rounded bg-red-100 border border-red-400 text-red-600 flex items-center justify-center font-bold text-[10px]">✕</div>
+                <span class="text-gray-700 font-medium">Ocupado / Reservado</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="w-6 h-6 rounded bg-gray-200 border border-gray-400 text-gray-600 flex items-center justify-center font-bold text-[10px]">🔧</div>
+                <span class="text-gray-700 font-medium">Fuera de Servicio (RN-11)</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="w-6 h-6 rounded bg-gray-100 border border-gray-300 text-gray-400 flex items-center justify-center font-bold text-[10px]">🚫</div>
+                <span class="text-gray-500">No cumple Filtro Técnico</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selector de Bloque Horario -->
+          <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+            <h3 class="font-semibold text-gray-700 text-xs uppercase tracking-wider border-b pb-2">Selector de Bloque Horario (Timeline)</h3>
+            <div class="space-y-2" id="timeline-container">
+              <!-- Renderizado de horas -->
+            </div>
+          </div>
+
+          <!-- Resumen de Búsqueda Anterior -->
+          <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs space-y-1">
+            <span class="font-semibold text-gray-500 block uppercase">Búsqueda Aplicada</span>
+            <p id="applied-search-summary" class="text-gray-700 font-medium">[Edificio C, L-3] [Fecha actual] [08:00-10:00] [Linux, Java]</p>
+          </div>
+
+          <!-- Botón de Continuar a Confirmación -->
+          <button id="btn-to-confirmation" onclick="openConfirmationModal()" disabled class="w-full bg-ittla-green opacity-50 cursor-not-allowed hover:bg-ittla-darkgreen text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all text-sm flex items-center justify-center space-x-2">
+            <span>[ CONTINUAR A LA CONFIRMACIÓN ]</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANTALLA 4: PASE DIGITAL Y HISTORIAL (My_Reservations) -->
+    <section id="view-reservations" class="space-y-6 hidden">
+      <div class="border-b pb-4 border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-800">Mis Reservaciones</h1>
+        <p class="text-sm text-gray-500">Hola, <span class="font-semibold text-gray-700">Eumir Antonio (23251061)</span>. Consulta tu pase digital activo e historial académico.</p>
+      </div>
+
+      <!-- Sección Reservación Activa -->
+      <div class="space-y-3">
+        <h2 class="text-lg font-bold text-gray-800 flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Reservación Activa</span>
+        </h2>
+
+        <div id="active-reservation-card" class="bg-white border-2 border-ittla-green rounded-2xl p-6 shadow-md max-w-2xl relative overflow-hidden">
+          <div class="absolute top-0 right-0 bg-ittla-green text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg tracking-wider uppercase">
+            Pase Digital Valido
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <!-- QR Code -->
+            <div class="flex flex-col items-center bg-gray-50 p-3 rounded-xl border border-gray-200">
+              <div id="qrcode-container" class="bg-white p-2 rounded shadow-inner"></div>
+              <span class="text-[10px] font-mono text-gray-500 mt-2 font-bold" id="pass-folio">#RES-2026-8891</span>
+            </div>
+
+            <!-- Información -->
+            <div class="flex-1 space-y-2 text-center sm:text-left text-sm">
+              <div class="border-b pb-2">
+                <span class="text-xs font-bold text-ittla-green uppercase tracking-wider block">PASE DIGITAL DE ACCESO</span>
+                <h3 class="font-bold text-gray-800 text-base" id="pass-user">Cruz Ruiz Eumir Antonio</h3>
+                <p class="text-xs text-gray-500">Matrícula: 23251061</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span class="text-gray-500 block">Laboratorio:</span>
+                  <span class="font-bold text-gray-800" id="pass-lab">L-3 (Edificio C)</span>
+                </div>
+                <div>
+                  <span class="text-gray-500 block">Equipo Asignado:</span>
+                  <span class="font-bold text-gray-800" id="pass-pc">PC-14 (SO Linux / Ubuntu)</span>
+                </div>
+              </div>
+
+              <div class="text-xs pt-1">
+                <span class="text-gray-500 block">Fecha y Hora Reservada:</span>
+                <span class="font-bold text-ittla-green" id="pass-datetime">28/Oct/2026, 10:00 AM - 11:00 AM</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="mt-6 border-t pt-4 flex justify-end">
+            <button onclick="openCancelModal()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg text-xs shadow transition-colors flex items-center space-x-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              <span>[ Cancelar Reservación ]</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sin reservación activa -->
+        <div id="no-active-reservation" class="hidden bg-white border border-gray-200 rounded-xl p-8 text-center space-y-3 max-w-2xl">
+          <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto text-xl">
+            📅
+          </div>
+          <h3 class="font-bold text-gray-700">No tienes ninguna reservación activa en este momento.</h3>
+          <p class="text-xs text-gray-500">Puedes consultar los laboratorios disponibles en el catálogo para agendar un equipo.</p>
+          <button onclick="navigateTo('search')" class="bg-ittla-green text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-ittla-darkgreen transition-colors">
+            Ir al Catálogo de Laboratorios
+          </button>
+        </div>
+      </div>
+
+      <!-- Sección Historial -->
+      <div class="space-y-3 pt-4">
+        <h2 class="text-lg font-bold text-gray-800">Historial de Reservaciones</h2>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold uppercase tracking-wider">
+                  <th class="py-3 px-4">[ Fecha ]</th>
+                  <th class="py-3 px-4">[ Laboratorio ]</th>
+                  <th class="py-3 px-4">[ Equipo ]</th>
+                  <th class="py-3 px-4">[ Estatus ]</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body" class="divide-y divide-gray-100 text-gray-700">
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-medium">25/Oct/2026</td>
+                  <td class="py-3 px-4">L-2 (Edf. C)</td>
+                  <td class="py-3 px-4 font-mono">PC-08</td>
+                  <td class="py-3 px-4">
+                    <span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-xs font-semibold">[ Completada ]</span>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-medium">20/Oct/2026</td>
+                  <td class="py-3 px-4">L-4 (Edf. C)</td>
+                  <td class="py-3 px-4 font-mono">PC-11</td>
+                  <td class="py-3 px-4">
+                    <span class="bg-red-100 text-red-800 px-2.5 py-1 rounded-full text-xs font-semibold">[ Cancelada ]</span>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-medium">15/Oct/2026</td>
+                  <td class="py-3 px-4">L-3 (Edf. C)</td>
+                  <td class="py-3 px-4 font-mono">PC-14</td>
+                  <td class="py-3 px-4">
+                    <span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-xs font-semibold">[ Completada ]</span>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4 font-medium">10/Oct/2026</td>
+                  <td class="py-3 px-4">L-1 (Edf. B)</td>
+                  <td class="py-3 px-4 font-mono">PC-20</td>
+                  <td class="py-3 px-4">
+                    <span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-xs font-semibold">[ Completada ]</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE CONFIRMACIÓN -->
+  <div id="modal-confirmation" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-gray-100">
+      <div class="flex justify-between items-center p-5 border-b border-gray-100">
+        <h3 class="text-xl font-bold text-gray-800">Confirmar Reservación de Equipo</h3>
+        <button onclick="closeConfirmationModal()" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5">
+        <fieldset class="border border-gray-300 rounded-xl p-4 bg-gray-50/50">
+          <legend class="text-xs font-bold text-gray-600 px-2 uppercase tracking-wider">Resumen de Datos</legend>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between border-b pb-2">
+              <span class="text-gray-500 font-medium">Usuario:</span>
+              <span class="font-bold text-gray-800" id="modal-user">Cruz Ruiz Eumir Antonio (23251061)</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+              <span class="text-gray-500 font-medium">Laboratorio:</span>
+              <span class="font-bold text-gray-800" id="modal-lab">L-3 (Edificio C)</span>
+            </div>
+            <div class="flex justify-between border-b pb-2">
+              <span class="text-gray-500 font-medium">Equipo:</span>
+              <span class="font-bold text-gray-800" id="modal-pc">PC-14 (SO Linux / Ubuntu)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 font-medium">Fecha y Hora:</span>
+              <span class="font-bold text-ittla-green" id="modal-datetime">28/Oct/2026 - 10:00 AM a 11:00 AM</span>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start space-x-3">
+          <div class="text-amber-600 text-xl flex-shrink-0">⚠️</div>
+          <p class="text-xs text-amber-800 leading-relaxed font-medium">
+            Si no se presenta dentro de los primeros <span class="font-bold text-amber-900 underline">10 minutos</span>, el espacio se liberará automáticamente.
+          </p>
+        </div>
+      </div>
+
+      <div class="p-5 bg-gray-50 border-t border-gray-100 flex items-center justify-end space-x-3">
+        <button onclick="closeConfirmationModal()" class="px-5 py-2.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 font-medium text-sm transition-colors">
+          [ Cancelar ]
+        </button>
+        <button onclick="processReservationConfirm()" class="px-5 py-2.5 rounded-lg bg-ittla-green hover:bg-ittla-darkgreen text-white font-bold text-sm shadow transition-colors">
+          [ Confirmar Reservación ]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CANCELACIÓN -->
+  <div id="modal-cancel-confirm" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-100">
+      <div class="p-6 text-center space-y-4">
+        <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto text-2xl">
+          🗑️
+        </div>
+        <h3 class="text-lg font-bold text-gray-800">¿Cancelar Reservación Activa?</h3>
+        <p class="text-xs text-gray-500 leading-relaxed">
+          Esta acción liberará el equipo <span id="cancel-pc-name" class="font-bold text-gray-700">PC-14</span> para otros estudiantes y anulará el pase digital con folio <span id="cancel-folio-name" class="font-bold text-gray-700">#RES-2026-8891</span>.
+        </p>
+
+        <div class="pt-2 flex space-x-3">
+          <button onclick="closeCancelModal()" class="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium text-xs hover:bg-gray-50">
+            Regresar
+          </button>
+          <button onclick="executeReservationCancellation()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow">
+            Sí, Cancelar Reservación
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Archivo JavaScript Principal -->
+  <script src="js/script.js"></script>
+</body>
+</html>

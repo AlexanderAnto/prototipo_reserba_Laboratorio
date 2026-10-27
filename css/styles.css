@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Transiciones suaves para los elementos dinámicos */
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Ajustes para la impresión del código QR */
+#qrcode-container img,
+#qrcode-container canvas {
+  margin: 0 auto;
+}
